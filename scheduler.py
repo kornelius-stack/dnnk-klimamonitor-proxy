@@ -7,6 +7,7 @@ BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 DIGEST_EMAIL_TO = os.environ.get("DIGEST_EMAIL_TO", "kp@dnnk.dk")
 DIGEST_EMAIL_FROM = os.environ.get("DIGEST_EMAIL_FROM", "kp@dnnk.dk")
 DIGEST_EMAIL_FROM_NAME = "DNNK Klimamonitor"
+BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://dnnk-klimamonitor-proxy.onrender.com")
 
 QUERIES = [
     "klimatilpasning skybrud",
@@ -20,7 +21,7 @@ async def fetch_articles(query: str, limit: int = 3) -> list:
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
-                "http://localhost:10000/news/full",
+                f"{BASE_URL}/news/full",
                 params={"q": query, "limit": limit}
             )
             data = resp.json()
@@ -33,7 +34,7 @@ async def fetch_ted(query: str, size: int = 5) -> list:
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
-                "http://localhost:10000/ted",
+                f"{BASE_URL}/ted",
                 params={"q": query, "size": size}
             )
             data = resp.json()
