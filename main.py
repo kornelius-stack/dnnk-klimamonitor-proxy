@@ -26,12 +26,14 @@ KEYWORDS = [
     "Interreg", "LIFE programme", "Horizon Europe", "Climate-ADAPT",
     "nature-based solutions", "flood risk", "coastal adaptation",
     "DHI", "SCALGO", "Stormrådet", "Realdania", "klimarisiko",
-    "C40", "ICLEI", "Deltares", "water resilience"
+    "C40", "ICLEI", "Deltares", "water resilience",
+    "klima", "vand", "miljø", "natur", "bæredygtig", "grøn",
+    "climate", "water", "flood", "urban", "infrastructure"
 ]
 
 async def fetch_rss(client, source, url, query):
     try:
-        resp = await client.get(url, timeout=10, follow_redirects=True,
+        resp = await client.get(url, timeout=15, follow_redirects=True,
             headers={"User-Agent": "DNNK-KlimaMonitor/1.0"})
         if resp.status_code != 200:
             return []
@@ -41,7 +43,7 @@ async def fetch_rss(client, source, url, query):
         results = []
         q_lower = query.lower()
         kw_lower = [k.lower() for k in KEYWORDS]
-        for item in items[:40]:
+        for item in items[:20]:
             def get(tag):
                 el = item.find(tag) or item.find(f"atom:{tag}", ns)
                 return (el.text or "").strip() if el is not None else ""
@@ -50,10 +52,7 @@ async def fetch_rss(client, source, url, query):
             link = get("link") or get("id")
             pub_date = get("pubDate") or get("published") or get("updated")
             combined = (title + " " + description).lower()
-            kw_match = any(kw in combined for kw in kw_lower)
             q_match = any(w in combined for w in q_lower.split() if len(w) > 3)
-            if not (kw_match or q_match):
-                continue
             score = sum(1 for kw in kw_lower if kw in combined) + (3 if q_match else 0)
             results.append({
                 "source": "news", "feedSource": source, "title": title,
