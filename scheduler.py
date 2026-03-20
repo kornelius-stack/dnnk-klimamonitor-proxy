@@ -132,7 +132,6 @@ async def send_brevo_email(subject: str, html_content: str):
             print(f"E-mail sendt til {DIGEST_EMAIL_TO} via Brevo ✅")
         else:
             print(f"Brevo fejl {resp.status_code}: {resp.text}")
-
 async def run_daily_digest():
     print(f"[{datetime.now().strftime('%H:%M')}] Starter daglig scanning...")
 
@@ -159,7 +158,10 @@ async def run_daily_digest():
     subject = f"DNNK Klimamonitor · {scan_date} · {len(unique_articles)} nyheder"
 
     print(f"Fundet {len(unique_articles)} nyheder og {len(ted_notices)} TED-udbud")
+    print(f"Sender e-mail til {DIGEST_EMAIL_TO} fra {DIGEST_EMAIL_FROM}...")
+    print(f"BREVO_API_KEY sat: {'ja' if BREVO_API_KEY else 'NEJ – MANGLER'}")
     await send_brevo_email(subject, html)
+    print("run_daily_digest afsluttet")
 
 async def scheduler_loop():
     cph = timezone(timedelta(hours=1))
