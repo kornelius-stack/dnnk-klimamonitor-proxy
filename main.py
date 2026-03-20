@@ -27,9 +27,30 @@ KEYWORDS = [
     "nature-based solutions", "flood risk", "coastal adaptation",
     "DHI", "SCALGO", "Stormrådet", "Realdania", "klimarisiko",
     "C40", "ICLEI", "Deltares", "water resilience",
-    "klima", "vand", "miljø", "natur", "bæredygtig", "grøn",
+    "klima", "vand", "miljø", "natur", "bæredygtig",
     "climate", "water", "flood", "urban", "infrastructure"
 ]
+
+def parse_item(item):
+    title = ""
+    description = ""
+    link = ""
+    pub_date = ""
+    for child in item:
+        tag = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+        text = (child.text or "").strip()
+        if tag == "title" and not title:
+            title = text
+        elif tag in ("description", "summary", "content") and not description:
+            description = re.sub(r"<[^>]+>", "", text)[:400]
+        elif tag == "link" and not link:
+            href = child.get("href", "")
+            link = href if href else text
+        elif tag == "id" and not link:
+            link = text
+        elif tag in ("pubDate", "published", "updated", "date") and not pub_date:
+            pub_date = text[:10] if text else ""
+    return title, description, link, pub_date
 
 async def fetch_rss(client, source, url, query):
     try:
@@ -37,27 +58,29 @@ async def fetch_rss(client, source, url, query):
             headers={"User-Agent": "DNNK-KlimaMonitor/1.0"})
         if resp.status_code != 200:
             return []
-        root_el = ET.fromstring(resp.text)
-        ns = {"atom": "http://www.w3.org/2005/Atom"}
-        items = root_el.findall(".//item") or root_el.findall(".//atom:entry", ns)
+        content = re.sub(r' xmlns[^=]*="[^"]*"', '', resp.text)
+        content = re.sub(r'<\?xml[^>]*\?>', '', content)
+        try:
+            root_el = ET.fromstring(content)
+        except ET.ParseError:
+            return []
+        items = root_el.findall(".//item") + root_el.findall(".//entry")
+        if not items:
+            return []
         results = []
         q_lower = query.lower()
         kw_lower = [k.lower() for k in KEYWORDS]
         for item in items[:20]:
-            def get(tag):
-                el = item.find(tag) or item.find(f"atom:{tag}", ns)
-                return (el.text or "").strip() if el is not None else ""
-            title = get("title")
-            description = re.sub(r"<[^>]+>", "", get("description") or get("summary"))[:400]
-            link = get("link") or get("id")
-            pub_date = get("pubDate") or get("published") or get("updated")
+            title, description, link, pub_date = parse_item(item)
+            if not title:
+                continue
             combined = (title + " " + description).lower()
             q_match = any(w in combined for w in q_lower.split() if len(w) > 3)
             score = sum(1 for kw in kw_lower if kw in combined) + (3 if q_match else 0)
             results.append({
                 "source": "news", "feedSource": source, "title": title,
-                "org": source, "date": pub_date[:10] if pub_date else "",
-                "summary": description, "tags": [kw for kw in KEYWORDS[:6] if kw.lower() in combined][:3],
+                "org": source, "date": pub_date, "summary": description,
+                "tags": [kw for kw in KEYWORDS[:6] if kw.lower() in combined][:3],
                 "relevance": min(round(score / 8, 2), 1.0), "url": link, "value": None
             })
         results.sort(key=lambda x: x["relevance"], reverse=True)
