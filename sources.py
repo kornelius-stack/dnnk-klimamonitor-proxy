@@ -14,6 +14,9 @@ RSS_NEWS = {
     "Politiken Klima":      "https://politiken.dk/rss/klima.rss",
     "Berlingske":           "https://www.berlingske.dk/rss/nyheder/nyheder.rss",
     "Klimamonitor":         "https://klimamonitor.dk/feed/",
+    "Ingeniøren": "https://ing.dk/rss",
+    "Ingeniøren Energi & Miljø": "https://ing.dk/term/rss/1964",
+    "Berlingske": "https://berlingske.dk/content/rss",
 }
 
 # ── VIDENSINSTITUTIONER ──
