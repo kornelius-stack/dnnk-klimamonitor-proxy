@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DNNK Klimamonitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-deep: #1a3d2b;
+    --green-mid: #2d6a4f;
+    --green-light: #52b788;
+    --green-pale: #d8f3dc;
+    --cream: #f8f4ee;
+    --ink: #1c1c1c;
+    --muted: #6b7280;
+    --border: #e5e0d8;
+    --white: #ffffff;
+    --ted-blue: #1a4d6e;
+    --ted-pale: #e8f4fd;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--green-deep);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    color: var(--white);
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+  }
+
+  .logo span {
+    color: var(--green-light);
+    font-style: italic;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green-light);
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.8rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    align-items: center;
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: 0.75rem 1.25rem;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    background: var(--white);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-bar input:focus {
+    border-color: var(--green-light);
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--green-mid);
+    color: white;
+  }
+
+  .btn-primary:hover { background: var(--green-deep); }
+
+  .btn-secondary {
+    background: var(--white);
+    color: var(--green-mid);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-secondary:hover { border-color: var(--green-light); }
+
+  .filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+
+  .filter-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--green-mid);
+    color: white;
+    border-color: var(--green-mid);
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .stat-card .label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .stat-card .value {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    color: var(--green-deep);
+    line-height: 1;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--green-deep);
+  }
+
+  .section-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .articles-grid {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .article-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: start;
+  }
+
+  .article-card:hover {
+    border-color: var(--green-light);
+    box-shadow: 0 2px 12px rgba(45,106,79,0.08);
+  }
+
+  .article-title {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--green-deep);
+    margin-bottom: 0.3rem;
+    line-height: 1.4;
+  }
+
+  .article-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .article-title a:hover { text-decoration: underline; }
+
+  .article-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 0.5rem;
+  }
+
+  .article-summary {
+    font-size: 0.85rem;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  .tags {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.6rem;
+  }
+
+  .tag {
+    padding: 0.2rem 0.6rem;
+    background: var(--green-pale);
+    color: var(--green-mid);
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .relevance-bar {
+    width: 48px;
+    text-align: right;
+  }
+
+  .relevance-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--green-light);
+    font-weight: 500;
+  }
+
+  .ted-card {
+    background: var(--ted-pale);
+    border: 1px solid #bee3f8;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s;
+  }
+
+  .ted-card:hover { border-color: var(--ted-blue); }
+
+  .ted-title {
+    font-weight: 500;
+    font-size: 0.92rem;
+    color: var(--ted-blue);
+    margin-bottom: 0.3rem;
+  }
+
+  .ted-title a { color: inherit; text-decoration: none; }
+  .ted-title a:hover { text-decoration: underline; }
+
+  .ted-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .loading-dot {
+    display: inline-block;
+    animation: blink 1.4s infinite;
+  }
+
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+  }
+
+  .error {
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    color: #c53030;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .gruppe-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    background: var(--green-pale);
+    color: var(--green-mid);
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .article-card { grid-template-columns: 1fr; }
+    .relevance-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DNNK <span>Klimamonitor</span></div>
+  <div class="header-right">
+    <span><span class="status-dot"></span>Live</span>
+    <span id="last-scan">—</span>
+  </div>
+</header>
+
+<main>
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Søg på klimatilpasning, skybrud, LAR, kommuner..." value="klimatilpasning">
+    <button class="btn btn-primary" onclick="search()">Søg</button>
+    <button class="btn btn-secondary" onclick="autoScan()">Auto-scan</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <button class="filter-btn active" onclick="setFilter('alle')">Alle</button>
+    <button class="filter-btn" onclick="setFilter('Nyheder & fagblade')">Nyheder</button>
+    <button class="filter-btn" onclick="setFilter('Vidensinstitutioner')">Vidensinstitutioner</button>
+    <button class="filter-btn" onclick="setFilter('Myndigheder')">Myndigheder</button>
+    <button class="filter-btn" onclick="setFilter('Rådgivere')">Rådgivere</button>
+    <button class="filter-btn" onclick="setFilter('Forsyninger')">Forsyninger</button>
+    <button class="filter-btn" onclick="setFilter('Kommuner')">Kommuner</button>
+    <button class="filter-btn" onclick="setFilter('Nordiske naboer')">Norden</button>
+    <button class="filter-btn" onclick="setFilter('EU projekter')">EU</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">Nyheder fundet</div>
+      <div class="value" id="stat-articles">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">EU-udbud</div>
+      <div class="value" id="stat-ted">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Feeds scannet</div>
+      <div class="value" id="stat-feeds">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Senest scannet</div>
+      <div class="value" style="font-size:1rem;padding-top:0.4rem;" id="stat-time">—</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Nyheder & artikler</div>
+    <div class="section-count" id="articles-count"></div>
+  </div>
+  <div class="articles-grid" id="articles-container">
+    <div class="loading">Klar til scanning<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title" style="color:var(--ted-blue)">EU-udbud (TED)</div>
+    <div class="section-count" id="ted-count"></div>
+  </div>
+  <div id="ted-container">
+    <div class="loading">Klar til scanning<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
+  </div>
+</main>
+
+<script>
+const PROXY = 'https://dnnk-klimamonitor-proxy.onrender.com';
+let allArticles = [];
+let currentFilter = 'alle';
+
+function setFilter(gruppe) {
+  currentFilter = gruppe;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderArticles(allArticles);
+}
+
+function renderArticles(articles) {
+  const container = document.getElementById('articles-container');
+  const filtered = currentFilter === 'alle'
+    ? articles
+    : articles.filter(a => a.gruppe === currentFilter);
+
+  document.getElementById('articles-count').textContent = `${filtered.length} resultater`;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty">Ingen artikler fundet for dette filter</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(a => `
+    <div class="article-card">
+      <div>
+        <div class="article-title">
+          <a href="${a.url || '#'}" target="_blank">${a.title || 'Uden titel'}</a>
+          ${a.gruppe ? `<span class="gruppe-badge">${a.gruppe}</span>` : ''}
+        </div>
+        <div class="article-meta">${a.feedSource || ''} · ${a.date || ''}</div>
+        <div class="article-summary">${(a.summary || '').slice(0, 220)}${(a.summary || '').length > 220 ? '...' : ''}</div>
+        <div class="tags">${(a.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+      <div class="relevance-bar">
+        <div class="relevance-score">${Math.round((a.relevance || 0) * 100)}%</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTed(notices) {
+  const container = document.getElementById('ted-container');
+  document.getElementById('ted-count').textContent = `${notices.length} udbud`;
+
+  if (notices.length === 0) {
+    container.innerHTML = '<div class="empty">Ingen aktuelle EU-udbud fundet</div>';
+    return;
+  }
+
+  container.innerHTML = notices.slice(0, 10).map(n => {
+    let title = n.title || {};
+    if (typeof title === 'object') title = title.dan || title.eng || 'Uden titel';
+    const date = (n.publicationDate || '').slice(0, 10);
+    const url = n.tedPublicationUrl || '#';
+    return `
+      <div class="ted-card">
+        <div class="ted-title"><a href="${url}" target="_blank">${title}</a></div>
+        <div class="ted-meta">TED EU · ${date}</div>
+      </div>`;
+  }).join('');
+}
+
+async function search() {
+  const q = document.getElementById('search-input').value || 'klimatilpasning';
+  const articlesContainer = document.getElementById('articles-container');
+  const tedContainer = document.getElementById('ted-container');
+
+  articlesContainer.innerHTML = '<div class="loading">Henter artikler<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
+  tedContainer.innerHTML = '<div class="loading">Henter EU-udbud<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
+
+  try {
+    const [newsRes, tedRes] = await Promise.all([
+      fetch(`${PROXY}/news/full?q=${encodeURIComponent(q)}&limit=5`),
+      fetch(`${PROXY}/ted?q=${encodeURIComponent(q)}&size=10`)
+    ]);
+
+    const newsData = await newsRes.json();
+    const tedData = await tedRes.json();
+
+    allArticles = newsData.articles || [];
+    const notices = tedData.notices || tedData.results || [];
+
+    document.getElementById('stat-articles').textContent = allArticles.length;
+    document.getElementById('stat-ted').textContent = notices.length;
+    document.getElementById('stat-feeds').textContent = newsData.feeds_checked || '153';
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('stat-time').textContent = timeStr;
+    document.getElementById('last-scan').textContent = `Scannet ${timeStr}`;
+
+    renderArticles(allArticles);
+    renderTed(notices);
+
+  } catch (e) {
+    articlesContainer.innerHTML = `<div class="error">Kunne ikke hente data: ${e.message}. Serveren vågner op — prøv igen om 30 sekunder.</div>`;
+    tedContainer.innerHTML = '';
+  }
+}
+
+async function autoScan() {
+  const queries = ['klimatilpasning skybrud', 'LAR regnvand', 'spildevand klimasikring', 'kystbeskyttelse', 'vandforsyning'];
+  const articlesContainer = document.getElementById('articles-container');
+
+  articlesContainer.innerHTML = '<div class="loading">Scanner alle 153 feeds<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
+
+  const all = [];
+  const tedAll = [];
+
+  for (const q of queries) {
+    try {
+      const res = await fetch(`${PROXY}/news/full?q=${encodeURIComponent(q)}&limit=4`);
+      const data = await res.json();
+      all.push(...(data.articles || []));
+    } catch {}
+  }
+
+  try {
+    const tedRes = await fetch(`${PROXY}/ted?q=klimatilpasning&size=10`);
+    const tedData = await tedRes.json();
+    tedAll.push(...(tedData.notices || tedData.results || []));
+  } catch {}
+
+  // Dedupliker
+  const seen = new Set();
+  allArticles = all.filter(a => {
+    if (seen.has(a.title)) return false;
+    seen.add(a.title);
+    return true;
+  }).sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('stat-articles').textContent = allArticles.length;
+  document.getElementById('stat-ted').textContent = tedAll.length;
+  document.getElementById('stat-feeds').textContent = '153';
+  document.getElementById('stat-time').textContent = timeStr;
+  document.getElementById('last-scan').textContent = `Scannet ${timeStr}`;
+
+  renderArticles(allArticles);
+  renderTed(tedAll);
+}
+</script>
+</body>
+</html>
