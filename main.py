@@ -375,8 +375,22 @@ async def scrape_news(client, source, url, gruppe, query):
                 "gruppe": gruppe,
             })
 
-        articles.sort(key=lambda x: x["relevance"], reverse=True)
-        return articles[:5]
+        # Filtrer artikler uden klimarelevans fra scraping
+        # Kun behold hvis relevance > 0 ELLER titlen indeholder et kernenøgleord
+        CORE_KEYWORDS = [
+            "klima", "vand", "oversvøm", "regnvand", "spildevand", "kyst",
+            "stormflod", "LAR", "klimatilpasning", "klimasikring", "skybrud",
+            "forsyning", "vandmiljø", "grundvand", "renseanlæg", "kloak",
+            "nature-based", "havvand", "vandstand", "klimahandling"
+        ]
+        filtered = []
+        for a in articles:
+            title_lower = a["title"].lower()
+            if a["relevance"] > 0 or any(kw.lower() in title_lower for kw in CORE_KEYWORDS):
+                filtered.append(a)
+
+        filtered.sort(key=lambda x: x["relevance"], reverse=True)
+        return filtered[:5]
 
     except Exception:
         return []
@@ -401,3 +415,4 @@ async def get_scraped_news(q: str = Query("klimatilpasning")):
         "query": q,
         "scanned_at": datetime.utcnow().isoformat()
     }
+    
