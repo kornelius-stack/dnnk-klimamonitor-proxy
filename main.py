@@ -282,63 +282,76 @@ from sources import SCRAPE_SOURCES
 
 async def scrape_news(client, source, url, gruppe, query):
     """Scraper nyhedsartikler direkte fra hjemmeside HTML"""
+    from urllib.parse import urlparse, urljoin
     try:
         resp = await client.get(url, timeout=15, follow_redirects=True, headers=RSS_HEADERS)
         if resp.status_code != 200:
             return []
 
         soup = BeautifulSoup(resp.text, "lxml")
+        base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
 
-        # Fjern navigation, footer, scripts
         for tag in soup(["nav", "footer", "script", "style", "header"]):
             tag.decompose()
 
-        articles = []
         q_lower = query.lower()
         kw_lower = [k.lower() for k in KEYWORDS]
 
-        # Find artikelementer — prøv mange mønstre
+        # Find kandidater — prøv progressivt mere generelle selektorer
         candidates = (
             soup.find_all("article") or
-            soup.find_all(class_=re.compile(r"news|nyhed|artikel|post|teaser|card", re.I)) or
-            soup.find_all("li", class_=re.compile(r"news|nyhed|artikel|post|item", re.I))
+            soup.find_all(class_=re.compile(r"news[-_]?item|nyhed|artikel|post[-_]?item|teaser|card[-_]?item", re.I)) or
+            soup.find_all("li", class_=re.compile(r"news|nyhed|post|item|article", re.I)) or
+            soup.find_all(class_=re.compile(r"news|nyheder|articles|posts", re.I)) or
+            []
         )
 
+        # Fallback: alle h2/h3 med links
         if not candidates:
-            # Fallback: find alle h2/h3 links
-            candidates = soup.find_all(["h2", "h3"])
+            candidates = [a.parent for a in soup.find_all("a", href=True)
+                         if a.find_parent(["h2","h3"]) or a.find(["h2","h3"])][:20]
 
         seen_titles = set()
-        for el in candidates[:20]:
+        articles = []
+
+        for el in candidates[:25]:
             # Find titel
-            title_el = (
-                el.find(["h1", "h2", "h3", "h4"]) or
-                el if el.name in ["h2", "h3"] else None
-            )
+            title_el = el.find(["h1","h2","h3","h4"])
             if not title_el:
-                continue
+                if el.name in ["h2","h3","h4"]:
+                    title_el = el
+                else:
+                    continue
+
             title = title_el.get_text(strip=True)
-            if not title or len(title) < 10 or title in seen_titles:
+            if not title or len(title) < 8 or title in seen_titles:
                 continue
             seen_titles.add(title)
 
-            # Find link
-            link_el = title_el.find("a") or el.find("a")
+            # Find link — søg i titel først, derefter hele elementet
+            link_el = title_el.find("a") or el.find("a", href=True)
             article_url = ""
             if link_el and link_el.get("href"):
                 href = link_el["href"]
-                if href.startswith("http"):
-                    article_url = href
-                elif href.startswith("/"):
-                    from urllib.parse import urlparse
-                    base = urlparse(url)
-                    article_url = f"{base.scheme}://{base.netloc}{href}"
+                article_url = urljoin(base_url, href)
 
-            # Find dato
-            date_el = el.find(["time"]) or el.find(class_=re.compile(r"date|dato|tid", re.I))
+            # Find dato — søg i <time>, datetime-attribut, eller dato-klasser
             pub_date = ""
-            if date_el:
-                pub_date = (date_el.get("datetime") or date_el.get_text(strip=True))[:10]
+            time_el = el.find("time")
+            if time_el:
+                pub_date = (time_el.get("datetime") or time_el.get_text(strip=True))[:10]
+            if not pub_date:
+                date_el = el.find(class_=re.compile(r"date|dato|time|published|created", re.I))
+                if date_el:
+                    raw = date_el.get("datetime") or date_el.get("content") or date_el.get_text(strip=True)
+                    # Forsøg at udtrække dato i format YYYY-MM-DD eller DD.MM.YYYY
+                    m = re.search(r'(\d{4}-\d{2}-\d{2})', raw or "")
+                    if m:
+                        pub_date = m.group(1)
+                    else:
+                        m2 = re.search(r'(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})', raw or "")
+                        if m2:
+                            pub_date = f"{m2.group(3)}-{m2.group(2).zfill(2)}-{m2.group(1).zfill(2)}"
 
             # Find beskrivelse
             desc_el = el.find("p")
