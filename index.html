@@ -49,10 +49,7 @@
     letter-spacing: 0.02em;
   }
 
-  .logo span {
-    color: var(--green-light);
-    font-style: italic;
-  }
+  .logo span { color: var(--green-light); font-style: italic; }
 
   .status-dot {
     width: 8px; height: 8px;
@@ -76,6 +73,15 @@
     font-size: 0.8rem;
     font-family: 'DM Mono', monospace;
   }
+
+  .read-count {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .read-count:hover { color: rgba(255,255,255,0.7); }
 
   main {
     max-width: 1100px;
@@ -103,9 +109,7 @@
     transition: border-color 0.2s;
   }
 
-  .search-bar input:focus {
-    border-color: var(--green-light);
-  }
+  .search-bar input:focus { border-color: var(--green-light); }
 
   .btn {
     padding: 0.75rem 1.5rem;
@@ -118,20 +122,56 @@
     transition: all 0.2s;
   }
 
-  .btn-primary {
+  .btn-primary { background: var(--green-mid); color: white; }
+  .btn-primary:hover { background: var(--green-deep); }
+  .btn-secondary { background: var(--white); color: var(--green-mid); border: 1.5px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--green-light); }
+
+  .sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .sort-btn {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .sort-btn.active {
+    background: var(--green-deep);
+    color: white;
+    border-color: var(--green-deep);
+  }
+
+  .hide-read-btn {
+    margin-left: auto;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--white);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .hide-read-btn.active {
     background: var(--green-mid);
     color: white;
+    border-color: var(--green-mid);
   }
-
-  .btn-primary:hover { background: var(--green-deep); }
-
-  .btn-secondary {
-    background: var(--white);
-    color: var(--green-mid);
-    border: 1.5px solid var(--border);
-  }
-
-  .btn-secondary:hover { border-color: var(--green-light); }
 
   .filters {
     display: flex;
@@ -220,16 +260,45 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1.25rem;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
     display: grid;
     grid-template-columns: 1fr auto;
     gap: 0.5rem;
     align-items: start;
+    position: relative;
   }
 
   .article-card:hover {
     border-color: var(--green-light);
     box-shadow: 0 2px 12px rgba(45,106,79,0.08);
+  }
+
+  .article-card.is-read {
+    opacity: 0.45;
+    border-color: var(--border);
+  }
+
+  .article-card.is-read:hover {
+    opacity: 0.7;
+  }
+
+  .article-card.is-new {
+    border-left: 3px solid var(--green-light);
+  }
+
+  .new-badge {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    background: var(--green-light);
+    color: white;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .article-title {
@@ -240,11 +309,7 @@
     line-height: 1.4;
   }
 
-  .article-title a {
-    color: inherit;
-    text-decoration: none;
-  }
-
+  .article-title a { color: inherit; text-decoration: none; }
   .article-title a:hover { text-decoration: underline; }
 
   .article-meta {
@@ -265,6 +330,7 @@
     gap: 0.35rem;
     flex-wrap: wrap;
     margin-top: 0.6rem;
+    align-items: center;
   }
 
   .tag {
@@ -276,10 +342,27 @@
     font-family: 'DM Mono', monospace;
   }
 
-  .relevance-bar {
-    width: 48px;
-    text-align: right;
+  .mark-read-btn {
+    padding: 0.2rem 0.6rem;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+    margin-left: auto;
   }
+
+  .mark-read-btn:hover { border-color: var(--green-mid); color: var(--green-mid); }
+
+  .article-card.is-read .mark-read-btn {
+    color: var(--green-light);
+    border-color: var(--green-light);
+  }
+
+  .relevance-bar { width: 48px; text-align: right; }
 
   .relevance-score {
     font-family: 'DM Mono', monospace;
@@ -299,21 +382,10 @@
 
   .ted-card:hover { border-color: var(--ted-blue); }
 
-  .ted-title {
-    font-weight: 500;
-    font-size: 0.92rem;
-    color: var(--ted-blue);
-    margin-bottom: 0.3rem;
-  }
-
+  .ted-title { font-weight: 500; font-size: 0.92rem; color: var(--ted-blue); margin-bottom: 0.3rem; }
   .ted-title a { color: inherit; text-decoration: none; }
   .ted-title a:hover { text-decoration: underline; }
-
-  .ted-meta {
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
+  .ted-meta { font-size: 0.78rem; color: var(--muted); font-family: 'DM Mono', monospace; }
 
   .loading {
     text-align: center;
@@ -323,11 +395,7 @@
     font-size: 0.85rem;
   }
 
-  .loading-dot {
-    display: inline-block;
-    animation: blink 1.4s infinite;
-  }
-
+  .loading-dot { display: inline-block; animation: blink 1.4s infinite; }
   .loading-dot:nth-child(2) { animation-delay: 0.2s; }
   .loading-dot:nth-child(3) { animation-delay: 0.4s; }
 
@@ -377,6 +445,7 @@
 <header>
   <div class="logo">DNNK <span>Klimamonitor</span></div>
   <div class="header-right">
+    <span id="read-count-display" class="read-count" onclick="clearAllRead()" title="Klik for at nulstille læste artikler">0 læst</span>
     <span><span class="status-dot"></span>Live</span>
     <span id="last-scan">—</span>
   </div>
@@ -390,15 +459,15 @@
   </div>
 
   <div class="filters" id="filters">
-    <button class="filter-btn active" onclick="setFilter('alle')">Alle</button>
-    <button class="filter-btn" onclick="setFilter('Nyheder & fagblade')">Nyheder</button>
-    <button class="filter-btn" onclick="setFilter('Vidensinstitutioner')">Vidensinstitutioner</button>
-    <button class="filter-btn" onclick="setFilter('Myndigheder')">Myndigheder</button>
-    <button class="filter-btn" onclick="setFilter('Rådgivere')">Rådgivere</button>
-    <button class="filter-btn" onclick="setFilter('Forsyninger')">Forsyninger</button>
-    <button class="filter-btn" onclick="setFilter('Kommuner')">Kommuner</button>
-    <button class="filter-btn" onclick="setFilter('Nordiske naboer')">Norden</button>
-    <button class="filter-btn" onclick="setFilter('EU projekter')">EU</button>
+    <button class="filter-btn active" onclick="setFilter('alle', event)">Alle</button>
+    <button class="filter-btn" onclick="setFilter('Nyheder & fagblade', event)">Nyheder</button>
+    <button class="filter-btn" onclick="setFilter('Vidensinstitutioner', event)">Vidensinstitutioner</button>
+    <button class="filter-btn" onclick="setFilter('Myndigheder', event)">Myndigheder</button>
+    <button class="filter-btn" onclick="setFilter('Rådgivere', event)">Rådgivere</button>
+    <button class="filter-btn" onclick="setFilter('Forsyninger', event)">Forsyninger</button>
+    <button class="filter-btn" onclick="setFilter('Kommuner', event)">Kommuner</button>
+    <button class="filter-btn" onclick="setFilter('Nordiske naboer', event)">Norden</button>
+    <button class="filter-btn" onclick="setFilter('EU projekter', event)">EU</button>
   </div>
 
   <div class="stats-row">
@@ -422,8 +491,18 @@
 
   <div class="section-header">
     <div class="section-title">Nyheder & artikler</div>
-    <div class="section-count" id="articles-count"></div>
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <div class="section-count" id="articles-count"></div>
+    </div>
   </div>
+
+  <div class="sort-bar">
+    <span>Sortér:</span>
+    <button class="sort-btn active" id="sort-date" onclick="setSort('date')">Nyeste først</button>
+    <button class="sort-btn" id="sort-relevance" onclick="setSort('relevance')">Mest relevant</button>
+    <button class="hide-read-btn" id="hide-read-btn" onclick="toggleHideRead()">Skjul læste</button>
+  </div>
+
   <div class="articles-grid" id="articles-container">
     <div class="loading">Klar til scanning<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>
   </div>
@@ -441,43 +520,153 @@
 const PROXY = 'https://dnnk-klimamonitor-proxy.onrender.com';
 let allArticles = [];
 let currentFilter = 'alle';
+let currentSort = 'date';
+let hideRead = false;
+let readArticles = new Set(JSON.parse(localStorage.getItem('dnnk_read') || '[]'));
+let seenArticles = new Set(JSON.parse(localStorage.getItem('dnnk_seen') || '[]'));
+let lastScanTime = localStorage.getItem('dnnk_last_scan') || null;
 
-function setFilter(gruppe) {
+function saveRead() {
+  localStorage.setItem('dnnk_read', JSON.stringify([...readArticles]));
+  updateReadCount();
+}
+
+function saveSeen() {
+  localStorage.setItem('dnnk_seen', JSON.stringify([...seenArticles]));
+}
+
+function updateReadCount() {
+  const count = readArticles.size;
+  document.getElementById('read-count-display').textContent = count + ' læst';
+}
+
+function clearAllRead() {
+  if (confirm('Nulstil alle læste artikler?')) {
+    readArticles.clear();
+    seenArticles.clear();
+    saveRead();
+    saveSeen();
+    renderArticles(allArticles);
+  }
+}
+
+function markRead(articleId, btn) {
+  if (readArticles.has(articleId)) {
+    readArticles.delete(articleId);
+  } else {
+    readArticles.add(articleId);
+  }
+  saveRead();
+  renderArticles(allArticles);
+}
+
+function setSort(sort) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-' + sort).classList.add('active');
+  renderArticles(allArticles);
+}
+
+function toggleHideRead() {
+  hideRead = !hideRead;
+  document.getElementById('hide-read-btn').classList.toggle('active', hideRead);
+  renderArticles(allArticles);
+}
+
+function setFilter(gruppe, event) {
   currentFilter = gruppe;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  if (event) event.target.classList.add('active');
   renderArticles(allArticles);
+}
+
+function getArticleId(a) {
+  return a.url || a.title || Math.random().toString();
+}
+
+function isNewArticle(a) {
+  const id = getArticleId(a);
+  return !seenArticles.has(id);
+}
+
+function sortArticles(articles) {
+  if (currentSort === 'date') {
+    return [...articles].sort((a, b) => {
+      const da = new Date(a.date || 0);
+      const db = new Date(b.date || 0);
+      return db - da;
+    });
+  } else {
+    return [...articles].sort((a, b) => (b.relevance || 0) - (a.relevance || 0));
+  }
 }
 
 function renderArticles(articles) {
   const container = document.getElementById('articles-container');
-  const filtered = currentFilter === 'alle'
+
+  let filtered = currentFilter === 'alle'
     ? articles
     : articles.filter(a => a.gruppe === currentFilter);
 
-  document.getElementById('articles-count').textContent = `${filtered.length} resultater`;
+  if (hideRead) {
+    filtered = filtered.filter(a => !readArticles.has(getArticleId(a)));
+  }
+
+  filtered = sortArticles(filtered);
+
+  const total = currentFilter === 'alle' ? articles.length : filtered.length;
+  const unread = filtered.filter(a => !readArticles.has(getArticleId(a))).length;
+  document.getElementById('articles-count').textContent =
+    `${filtered.length} resultater · ${unread} ulæste`;
 
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="empty">Ingen artikler fundet for dette filter</div>';
+    container.innerHTML = '<div class="empty">Ingen artikler fundet</div>';
     return;
   }
 
-  container.innerHTML = filtered.map(a => `
-    <div class="article-card">
-      <div>
-        <div class="article-title">
-          <a href="${a.url || '#'}" target="_blank">${a.title || 'Uden titel'}</a>
-          ${a.gruppe ? `<span class="gruppe-badge">${a.gruppe}</span>` : ''}
+  container.innerHTML = filtered.map(a => {
+    const id = getArticleId(a);
+    const isRead = readArticles.has(id);
+    const isNew = isNewArticle(a);
+    return `
+      <div class="article-card ${isRead ? 'is-read' : ''} ${isNew && !isRead ? 'is-new' : ''}">
+        <div>
+          <div class="article-title">
+            <a href="${a.url || '#'}" target="_blank" onclick="markAsRead('${encodeURIComponent(id)}')">${a.title || 'Uden titel'}</a>
+            ${a.gruppe ? `<span class="gruppe-badge">${a.gruppe}</span>` : ''}
+            ${isNew && !isRead ? '<span class="new-badge">Ny</span>' : ''}
+          </div>
+          <div class="article-meta">${a.feedSource || ''} · ${a.date || ''}</div>
+          <div class="article-summary">${(a.summary || '').slice(0, 220)}${(a.summary || '').length > 220 ? '...' : ''}</div>
+          <div class="tags">
+            ${(a.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}
+            <button class="mark-read-btn" onclick="toggleRead('${encodeURIComponent(id)}')">${isRead ? '✓ Læst' : 'Markér læst'}</button>
+          </div>
         </div>
-        <div class="article-meta">${a.feedSource || ''} · ${a.date || ''}</div>
-        <div class="article-summary">${(a.summary || '').slice(0, 220)}${(a.summary || '').length > 220 ? '...' : ''}</div>
-        <div class="tags">${(a.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
-      </div>
-      <div class="relevance-bar">
-        <div class="relevance-score">${Math.round((a.relevance || 0) * 100)}%</div>
-      </div>
-    </div>
-  `).join('');
+        <div class="relevance-bar">
+          <div class="relevance-score">${Math.round((a.relevance || 0) * 100)}%</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function markAsRead(encodedId) {
+  const id = decodeURIComponent(encodedId);
+  readArticles.add(id);
+  saveRead();
+  // Opdater visuelt uden fuld re-render
+  setTimeout(() => renderArticles(allArticles), 200);
+}
+
+function toggleRead(encodedId) {
+  const id = decodeURIComponent(encodedId);
+  if (readArticles.has(id)) {
+    readArticles.delete(id);
+  } else {
+    readArticles.add(id);
+  }
+  saveRead();
+  renderArticles(allArticles);
 }
 
 function renderTed(notices) {
@@ -500,6 +689,11 @@ function renderTed(notices) {
         <div class="ted-meta">TED EU · ${date}</div>
       </div>`;
   }).join('');
+}
+
+function markCurrentAsSeen() {
+  allArticles.forEach(a => seenArticles.add(getArticleId(a)));
+  saveSeen();
 }
 
 async function search() {
@@ -532,6 +726,7 @@ async function search() {
 
     renderArticles(allArticles);
     renderTed(notices);
+    setTimeout(markCurrentAsSeen, 3000);
 
   } catch (e) {
     articlesContainer.innerHTML = `<div class="error">Kunne ikke hente data: ${e.message}. Serveren vågner op — prøv igen om 30 sekunder.</div>`;
@@ -562,7 +757,6 @@ async function autoScan() {
     tedAll.push(...(tedData.notices || tedData.results || []));
   } catch {}
 
-  // Dedupliker
   const seen = new Set();
   allArticles = all.filter(a => {
     if (seen.has(a.title)) return false;
@@ -580,7 +774,11 @@ async function autoScan() {
 
   renderArticles(allArticles);
   renderTed(tedAll);
+  setTimeout(markCurrentAsSeen, 3000);
 }
+
+// Init
+updateReadCount();
 </script>
 </body>
 </html>
