@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
 from datetime import datetime
 import asyncio
 import re
@@ -37,7 +38,32 @@ RSS_HEADERS = {
     "Accept-Language": "da,en;q=0.9",
 }
 
-def parse_item(item):
+def parse_item_bs(item):
+    """Parse et RSS/Atom item med BeautifulSoup"""
+    title = item.find("title")
+    title = title.get_text(strip=True) if title else ""
+    
+    desc = item.find("description") or item.find("summary") or item.find("content")
+    description = re.sub(r"<[^>]+>", "", desc.get_text(strip=True))[:400] if desc else ""
+    
+    link = item.find("link")
+    if link:
+        url = link.get("href") or link.get_text(strip=True)
+    else:
+        url = ""
+    
+    for tag in ["pubdate", "published", "updated", "date"]:
+        d = item.find(tag)
+        if d:
+            pub_date = d.get_text(strip=True)[:10]
+            break
+    else:
+        pub_date = ""
+    
+    return title, description, url, pub_date
+
+def parse_item_et(item):
+    """Parse et RSS/Atom item med ElementTree"""
     title = ""
     description = ""
     link = ""
@@ -63,20 +89,50 @@ async def fetch_rss(client, source, url, query):
         resp = await client.get(url, timeout=15, follow_redirects=True, headers=RSS_HEADERS)
         if resp.status_code != 200:
             return []
-        content = re.sub(r' xmlns[^=]*="[^"]*"', '', resp.text)
-        content = re.sub(r'<\?xml[^>]*\?>', '', content)
+        
+        content = resp.text
+        items = []
+        
+        # Prøv først ElementTree
         try:
-            root_el = ET.fromstring(content)
+            clean = re.sub(r' xmlns[^=]*="[^"]*"', '', content)
+            clean = re.sub(r'<\?xml[^>]*\?>', '', clean)
+            root_el = ET.fromstring(clean)
+            et_items = root_el.findall(".//item") + root_el.findall(".//entry")
+            if et_items:
+                items = [("et", i) for i in et_items]
         except ET.ParseError:
-            return []
-        items = root_el.findall(".//item") + root_el.findall(".//entry")
+            pass
+        
+        # Fallback: BeautifulSoup
+        if not items:
+            try:
+                soup = BeautifulSoup(content, "xml")
+                bs_items = soup.find_all("item") + soup.find_all("entry")
+                if bs_items:
+                    items = [("bs", i) for i in bs_items]
+            except Exception:
+                try:
+                    soup = BeautifulSoup(content, "lxml")
+                    bs_items = soup.find_all("item") + soup.find_all("entry")
+                    if bs_items:
+                        items = [("bs", i) for i in bs_items]
+                except Exception:
+                    pass
+        
         if not items:
             return []
+        
         results = []
         q_lower = query.lower()
         kw_lower = [k.lower() for k in KEYWORDS]
-        for item in items[:20]:
-            title, description, link, pub_date = parse_item(item)
+        
+        for parser, item in items[:20]:
+            if parser == "et":
+                title, description, link, pub_date = parse_item_et(item)
+            else:
+                title, description, link, pub_date = parse_item_bs(item)
+            
             if not title:
                 continue
             combined = (title + " " + description).lower()
@@ -107,29 +163,38 @@ async def test_feeds():
                 if resp.status_code != 200:
                     return {"navn": navn, "gruppe": gruppe, "url": url,
                             "status": "fejl", "info": f"HTTP {resp.status_code}"}
-                content = re.sub(r' xmlns[^=]*="[^"]*"', '', resp.text)
+                content = resp.text
+                # Prøv ET
                 try:
-                    root = ET.fromstring(content)
+                    clean = re.sub(r' xmlns[^=]*="[^"]*"', '', content)
+                    root = ET.fromstring(clean)
                     items = root.findall(".//item") + root.findall(".//entry")
-                    return {"navn": navn, "gruppe": gruppe, "url": url,
-                            "status": "ok", "info": f"{len(items)} items"}
-                except:
-                    return {"navn": navn, "gruppe": gruppe, "url": url,
-                            "status": "fejl", "info": "XML parse fejl"}
+                    if items:
+                        return {"navn": navn, "gruppe": gruppe, "url": url,
+                                "status": "ok", "info": f"{len(items)} items (ET)"}
+                except ET.ParseError:
+                    pass
+                # Prøv BS
+                try:
+                    soup = BeautifulSoup(content, "xml")
+                    items = soup.find_all("item") + soup.find_all("entry")
+                    if items:
+                        return {"navn": navn, "gruppe": gruppe, "url": url,
+                                "status": "ok", "info": f"{len(items)} items (BS)"}
+                except Exception:
+                    pass
+                return {"navn": navn, "gruppe": gruppe, "url": url,
+                        "status": "fejl", "info": "Ingen items fundet"}
         except Exception as e:
             return {"navn": navn, "gruppe": gruppe, "url": url,
                     "status": "fejl", "info": str(e)[:80]}
 
     tasks = [check_feed(n, m) for n, m in ALL_FEEDS_FLAT.items()]
     results = await asyncio.gather(*tasks)
-
     ok = [r for r in results if r["status"] == "ok"]
     fejl = [r for r in results if r["status"] != "ok"]
-
     return {
-        "total": len(results),
-        "ok": len(ok),
-        "fejl": len(fejl),
+        "total": len(results), "ok": len(ok), "fejl": len(fejl),
         "virker": sorted(ok, key=lambda x: x["gruppe"]),
         "virker_ikke": sorted(fejl, key=lambda x: x["gruppe"]),
         "testet": datetime.utcnow().isoformat()
