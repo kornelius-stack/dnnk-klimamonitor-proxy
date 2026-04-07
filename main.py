@@ -271,3 +271,120 @@ async def _scheduler_loop():
 def root():
     return {"status": "ok", "service": "DNNK Klimamonitor Proxy",
             "endpoints": ["/ted", "/news", "/news/full", "/news/kilder", "/test-feeds"]}
+
+
+# ─────────────────────────────────────────────────────────────
+# SCRAPING — til sider uden RSS
+# ─────────────────────────────────────────────────────────────
+
+# SCRAPE_SOURCES importeres fra sources.py
+from sources import SCRAPE_SOURCES
+
+async def scrape_news(client, source, url, gruppe, query):
+    """Scraper nyhedsartikler direkte fra hjemmeside HTML"""
+    try:
+        resp = await client.get(url, timeout=15, follow_redirects=True, headers=RSS_HEADERS)
+        if resp.status_code != 200:
+            return []
+
+        soup = BeautifulSoup(resp.text, "lxml")
+
+        # Fjern navigation, footer, scripts
+        for tag in soup(["nav", "footer", "script", "style", "header"]):
+            tag.decompose()
+
+        articles = []
+        q_lower = query.lower()
+        kw_lower = [k.lower() for k in KEYWORDS]
+
+        # Find artikelementer — prøv mange mønstre
+        candidates = (
+            soup.find_all("article") or
+            soup.find_all(class_=re.compile(r"news|nyhed|artikel|post|teaser|card", re.I)) or
+            soup.find_all("li", class_=re.compile(r"news|nyhed|artikel|post|item", re.I))
+        )
+
+        if not candidates:
+            # Fallback: find alle h2/h3 links
+            candidates = soup.find_all(["h2", "h3"])
+
+        seen_titles = set()
+        for el in candidates[:20]:
+            # Find titel
+            title_el = (
+                el.find(["h1", "h2", "h3", "h4"]) or
+                el if el.name in ["h2", "h3"] else None
+            )
+            if not title_el:
+                continue
+            title = title_el.get_text(strip=True)
+            if not title or len(title) < 10 or title in seen_titles:
+                continue
+            seen_titles.add(title)
+
+            # Find link
+            link_el = title_el.find("a") or el.find("a")
+            article_url = ""
+            if link_el and link_el.get("href"):
+                href = link_el["href"]
+                if href.startswith("http"):
+                    article_url = href
+                elif href.startswith("/"):
+                    from urllib.parse import urlparse
+                    base = urlparse(url)
+                    article_url = f"{base.scheme}://{base.netloc}{href}"
+
+            # Find dato
+            date_el = el.find(["time"]) or el.find(class_=re.compile(r"date|dato|tid", re.I))
+            pub_date = ""
+            if date_el:
+                pub_date = (date_el.get("datetime") or date_el.get_text(strip=True))[:10]
+
+            # Find beskrivelse
+            desc_el = el.find("p")
+            description = desc_el.get_text(strip=True)[:300] if desc_el else ""
+
+            combined = (title + " " + description).lower()
+            q_match = any(w in combined for w in q_lower.split() if len(w) > 3)
+            score = sum(1 for kw in kw_lower if kw in combined) + (3 if q_match else 0)
+
+            articles.append({
+                "source": "scrape",
+                "feedSource": source,
+                "title": title,
+                "org": source,
+                "date": pub_date,
+                "summary": description,
+                "tags": [kw for kw in KEYWORDS[:6] if kw.lower() in combined][:3],
+                "relevance": min(round(score / 8, 2), 1.0),
+                "url": article_url,
+                "value": None,
+                "gruppe": gruppe,
+            })
+
+        articles.sort(key=lambda x: x["relevance"], reverse=True)
+        return articles[:5]
+
+    except Exception:
+        return []
+
+
+@app.get("/news/scrape")
+async def get_scraped_news(q: str = Query("klimatilpasning")):
+    """Hent nyheder via direkte scraping fra sider uden RSS"""
+    async with httpx.AsyncClient() as client:
+        tasks = [
+            scrape_news(client, navn, meta["url"], meta["gruppe"], q)
+            for navn, meta in SCRAPE_SOURCES.items()
+        ]
+        nested = await asyncio.gather(*tasks)
+
+    articles = [a for sub in nested for a in sub]
+    articles.sort(key=lambda x: (x["relevance"], x["date"]), reverse=True)
+    return {
+        "articles": articles,
+        "total": len(articles),
+        "sources_checked": len(SCRAPE_SOURCES),
+        "query": q,
+        "scanned_at": datetime.utcnow().isoformat()
+    }
