@@ -31,6 +31,12 @@ KEYWORDS = [
     "climate", "water", "flood", "urban", "infrastructure"
 ]
 
+RSS_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    "Accept-Language": "da,en;q=0.9",
+}
+
 def parse_item(item):
     title = ""
     description = ""
@@ -54,8 +60,7 @@ def parse_item(item):
 
 async def fetch_rss(client, source, url, query):
     try:
-        resp = await client.get(url, timeout=15, follow_redirects=True,
-            headers={"User-Agent": "DNNK-KlimaMonitor/1.0"})
+        resp = await client.get(url, timeout=15, follow_redirects=True, headers=RSS_HEADERS)
         if resp.status_code != 200:
             return []
         content = re.sub(r' xmlns[^=]*="[^"]*"', '', resp.text)
@@ -88,6 +93,48 @@ async def fetch_rss(client, source, url, query):
     except Exception:
         return []
 
+@app.get("/test-feeds")
+async def test_feeds():
+    """Test alle RSS feeds og returner status for hver"""
+    from sources import ALL_FEEDS_FLAT
+
+    async def check_feed(navn, meta):
+        url = meta["url"]
+        gruppe = meta["gruppe"]
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(url, follow_redirects=True, headers=RSS_HEADERS)
+                if resp.status_code != 200:
+                    return {"navn": navn, "gruppe": gruppe, "url": url,
+                            "status": "fejl", "info": f"HTTP {resp.status_code}"}
+                content = re.sub(r' xmlns[^=]*="[^"]*"', '', resp.text)
+                try:
+                    root = ET.fromstring(content)
+                    items = root.findall(".//item") + root.findall(".//entry")
+                    return {"navn": navn, "gruppe": gruppe, "url": url,
+                            "status": "ok", "info": f"{len(items)} items"}
+                except:
+                    return {"navn": navn, "gruppe": gruppe, "url": url,
+                            "status": "fejl", "info": "XML parse fejl"}
+        except Exception as e:
+            return {"navn": navn, "gruppe": gruppe, "url": url,
+                    "status": "fejl", "info": str(e)[:80]}
+
+    tasks = [check_feed(n, m) for n, m in ALL_FEEDS_FLAT.items()]
+    results = await asyncio.gather(*tasks)
+
+    ok = [r for r in results if r["status"] == "ok"]
+    fejl = [r for r in results if r["status"] != "ok"]
+
+    return {
+        "total": len(results),
+        "ok": len(ok),
+        "fejl": len(fejl),
+        "virker": sorted(ok, key=lambda x: x["gruppe"]),
+        "virker_ikke": sorted(fejl, key=lambda x: x["gruppe"]),
+        "testet": datetime.utcnow().isoformat()
+    }
+
 @app.get("/ted")
 async def search_ted(q: str = Query("klimatilpasning"), size: int = 10):
     url = "https://api.ted.europa.eu/v3/notices/search"
@@ -96,36 +143,6 @@ async def search_ted(q: str = Query("klimatilpasning"), size: int = 10):
               "country": "DNK"}
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(url, params=params)
-        return resp.json()
-
-@app.get("/cvr")
-async def search_cvr(q: str = Query("vandforsyning")):
-    url = "https://cvrapi.dk/api"
-    params = {"search": q, "country": "dk", "limit": 10}
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.get(url, params=params,
-            headers={"User-Agent": "DNNK-KlimaMonitor/1.0"})
-        return resp.json()
-
-@app.get("/cvr/forsyninger")
-async def get_forsyninger(branche: str = Query("360000")):
-    url = "https://raw.data.api.virk.dk/cvr-permanent/virksomhed/_search"
-    body = {"query": {"bool": {"must": [
-        {"term": {"Vrvirksomhed.virksomhedMetadata.nyesteBranchekode.branchekode": branche}},
-        {"term": {"Vrvirksomhed.virksomhedMetadata.sammensatStatus": "NORMAL"}}
-    ]}}, "size": 50}
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.post(url, json=body)
-        return resp.json()
-
-@app.get("/plandata")
-async def get_plandata(kommunekode: str = Query(None)):
-    base = "https://api.dataforsyningen.dk/rest/gst/plandata/v2/spildevandsomraader"
-    params = {"format": "json", "limit": 20}
-    if kommunekode:
-        params["kommunekode"] = kommunekode
-    async with httpx.AsyncClient(timeout=20) as client:
-        resp = await client.get(base, params=params)
         return resp.json()
 
 @app.get("/news")
@@ -188,4 +205,4 @@ async def _scheduler_loop():
 @app.get("/")
 def root():
     return {"status": "ok", "service": "DNNK Klimamonitor Proxy",
-            "endpoints": ["/ted", "/cvr", "/plandata", "/news", "/news/full", "/send-digest"]}
+            "endpoints": ["/ted", "/news", "/news/full", "/news/kilder", "/test-feeds"]}
