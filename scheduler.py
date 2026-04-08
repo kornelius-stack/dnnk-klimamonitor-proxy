@@ -1,13 +1,18 @@
 import asyncio
 import httpx
 import os
+import json
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 DIGEST_EMAIL_TO = os.environ.get("DIGEST_EMAIL_TO", "kp@dnnk.dk")
 DIGEST_EMAIL_FROM = os.environ.get("DIGEST_EMAIL_FROM", "kp@dnnk.dk")
 DIGEST_EMAIL_FROM_NAME = "DNNK Klimamonitor"
 BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://dnnk-klimamonitor-proxy.onrender.com")
+
+# Fil til at gemme tidligere sendte artikler
+SENT_ARTICLES_FILE = Path("/tmp/sent_articles.json")
 
 QUERIES = [
     "klimatilpasning skybrud",
@@ -17,7 +22,25 @@ QUERIES = [
     "kystbeskyttelse oversvømmelse",
 ]
 
-async def fetch_articles(query: str, limit: int = 3) -> list:
+def load_sent_articles() -> set:
+    """Hent liste over tidligere sendte artikel-titler"""
+    try:
+        if SENT_ARTICLES_FILE.exists():
+            data = json.loads(SENT_ARTICLES_FILE.read_text())
+            return set(data.get("titles", []))
+    except Exception:
+        pass
+    return set()
+
+def save_sent_articles(titles: set):
+    """Gem sendte artikel-titler — behold kun de seneste 500"""
+    try:
+        titles_list = list(titles)[-500:]
+        SENT_ARTICLES_FILE.write_text(json.dumps({"titles": titles_list}))
+    except Exception as e:
+        print(f"Kunne ikke gemme sendte artikler: {e}")
+
+async def fetch_articles(query: str, limit: int = 5) -> list:
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
@@ -28,6 +51,20 @@ async def fetch_articles(query: str, limit: int = 3) -> list:
             return data.get("articles", [])
     except Exception as e:
         print(f"Fejl ved hentning af artikler for '{query}': {e}")
+        return []
+
+async def fetch_scrape(query: str) -> list:
+    """Hent scraped artikler fra kommuner, forsyninger og myndigheder"""
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.get(
+                f"{BASE_URL}/news/scrape",
+                params={"q": query}
+            )
+            data = resp.json()
+            return data.get("articles", [])
+    except Exception as e:
+        print(f"Fejl ved scraping: {e}")
         return []
 
 async def fetch_ted(query: str, size: int = 5) -> list:
@@ -43,25 +80,26 @@ async def fetch_ted(query: str, size: int = 5) -> list:
         print(f"Fejl ved hentning af TED-udbud: {e}")
         return []
 
-def build_html_email(articles: list, ted_notices: list, scan_date: str) -> str:
-    article_rows = ""
-    seen = set()
-    for art in articles:
-        key = art.get("title", "")
-        if key in seen:
-            continue
-        seen.add(key)
+def build_html_email(articles: list, scrape_articles: list, ted_notices: list, scan_date: str, new_count: int) -> str:
+
+    def article_row(art, badge=""):
         tags = ", ".join(art.get("tags", []))
-        url = art.get("url", "#")
-        article_rows += f"""
+        url = art.get("url", "#") or "#"
+        gruppe = art.get("gruppe", "")
+        gruppe_html = f'<span style="background:#e8f4fd;color:#1a4d6e;padding:2px 6px;border-radius:3px;font-size:11px;margin-left:6px;">{gruppe}</span>' if gruppe else ""
+        return f"""
         <tr>
-          <td style="padding:10px 0; border-bottom:1px solid #e8f0e0;">
-            <a href="{url}" style="color:#2d6a4f;font-weight:bold;text-decoration:none;">{art.get('title','')}</a><br>
+          <td style="padding:12px 0; border-bottom:1px solid #e8f0e0;">
+            {f'<span style="background:#52b788;color:white;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold;margin-right:6px;">NY</span>' if badge == 'ny' else ''}
+            <a href="{url}" style="color:#2d6a4f;font-weight:bold;text-decoration:none;">{art.get('title','')}</a>{gruppe_html}<br>
             <span style="color:#666;font-size:12px;">{art.get('feedSource','')} · {art.get('date','')}</span><br>
-            <span style="color:#444;font-size:13px;">{art.get('summary','')[:200]}...</span><br>
-            <span style="color:#888;font-size:11px;">{tags}</span>
+            <span style="color:#444;font-size:13px;">{(art.get('summary','') or '')[:200]}{'...' if len(art.get('summary','') or '') > 200 else ''}</span><br>
+            {'<span style="color:#888;font-size:11px;">' + tags + '</span>' if tags else ''}
           </td>
         </tr>"""
+
+    article_rows = "".join([article_row(a, "ny") for a in articles])
+    scrape_rows = "".join([article_row(a, "ny") for a in scrape_articles[:10]])
 
     ted_rows = ""
     for notice in ted_notices[:5]:
@@ -81,6 +119,14 @@ def build_html_email(articles: list, ted_notices: list, scan_date: str) -> str:
     if not ted_rows:
         ted_rows = "<tr><td style='color:#888;padding:10px 0;'>Ingen nye EU-udbud fundet i dag.</td></tr>"
 
+    scrape_section = ""
+    if scrape_rows:
+        scrape_section = f"""
+    <h2 style="color:#1a3d2b;border-bottom:2px solid #b7e4c7;padding-bottom:8px;margin-top:32px;">🏛️ Kommuner, forsyninger og myndigheder</h2>
+    <table width="100%" cellpadding="0" cellspacing="0">
+      {scrape_rows}
+    </table>"""
+
     return f"""
 <!DOCTYPE html>
 <html>
@@ -88,20 +134,21 @@ def build_html_email(articles: list, ted_notices: list, scan_date: str) -> str:
 <body style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;background:#f9fdf6;padding:20px;">
   <div style="background:#2d6a4f;padding:24px;border-radius:8px 8px 0 0;">
     <h1 style="color:white;margin:0;font-size:22px;">🌿 DNNK Klimamonitor</h1>
-    <p style="color:#b7e4c7;margin:6px 0 0;">Daglig scanning · {scan_date}</p>
+    <p style="color:#b7e4c7;margin:6px 0 0;">Daglig scanning · {scan_date} · <strong style="color:white;">{new_count} nye artikler</strong></p>
   </div>
   <div style="background:white;padding:24px;border-radius:0 0 8px 8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <h2 style="color:#2d6a4f;border-bottom:2px solid #b7e4c7;padding-bottom:8px;">📰 Nyheder og fagartikler</h2>
     <table width="100%" cellpadding="0" cellspacing="0">
-      {article_rows if article_rows else "<tr><td style='color:#888;padding:10px 0;'>Ingen relevante nyheder fundet i dag.</td></tr>"}
+      {article_rows if article_rows else "<tr><td style='color:#888;padding:10px 0;'>Ingen nye nyheder siden sidst.</td></tr>"}
     </table>
+    {scrape_section}
     <h2 style="color:#1a4d6e;border-bottom:2px solid #bee3f8;padding-bottom:8px;margin-top:32px;">🇪🇺 EU-udbud (TED)</h2>
     <table width="100%" cellpadding="0" cellspacing="0">
       {ted_rows}
     </table>
     <p style="color:#aaa;font-size:11px;margin-top:32px;border-top:1px solid #eee;padding-top:12px;">
-      Sendt automatisk af DNNK Klimamonitor · 153 RSS-feeds · 
-      <a href="https://dnnk-klimamonitor-proxy.onrender.com" style="color:#aaa;">dnnk-klimamonitor-proxy.onrender.com</a>
+      Sendt automatisk af DNNK Klimamonitor · 
+      <a href="https://kornelius-stack.github.io/dnnk-klimamonitor-proxy/" style="color:#2d6a4f;">Åbn klimamonitor</a>
     </p>
   </div>
 </body>
@@ -132,35 +179,66 @@ async def send_brevo_email(subject: str, html_content: str):
             print(f"E-mail sendt til {DIGEST_EMAIL_TO} via Brevo ✅")
         else:
             print(f"Brevo fejl {resp.status_code}: {resp.text}")
+
 async def run_daily_digest():
     print(f"[{datetime.now().strftime('%H:%M')}] Starter daglig scanning...")
 
+    # Hent tidligere sendte artikler
+    sent_titles = load_sent_articles()
+    print(f"Kendte artikler fra tidligere: {len(sent_titles)}")
+
+    # Hent RSS artikler
     all_articles = []
     for query in QUERIES:
-        articles = await fetch_articles(query, limit=3)
+        articles = await fetch_articles(query, limit=5)
         all_articles.extend(articles)
 
+    # Hent scraped artikler
+    scrape_articles = await fetch_scrape("klimatilpasning")
+
+    # Hent TED udbud
     ted_notices = await fetch_ted("klimatilpasning skybrud", size=5)
 
-    # Dedupliker
+    # Dedupliker RSS
     seen = set()
     unique_articles = []
     for art in all_articles:
         key = art.get("title", "")
-        if key not in seen:
+        if key and key not in seen:
             seen.add(key)
             unique_articles.append(art)
 
-    unique_articles.sort(key=lambda x: (x.get("relevance", 0), x.get("date", "")), reverse=True)
+    # Dedupliker scrape
+    seen_scrape = set()
+    unique_scrape = []
+    for art in scrape_articles:
+        key = art.get("title", "")
+        if key and key not in seen_scrape and art.get("relevance", 0) > 0:
+            seen_scrape.add(key)
+            unique_scrape.append(art)
 
-    scan_date = datetime.now().strftime("%d. %B %Y")
-    html = build_html_email(unique_articles[:20], ted_notices, scan_date)
-    subject = f"DNNK Klimamonitor · {scan_date} · {len(unique_articles)} nyheder"
+    # Filtrer kun NYE artikler (ikke sendt før)
+    new_articles = [a for a in unique_articles if a.get("title", "") not in sent_titles]
+    new_scrape = [a for a in unique_scrape if a.get("title", "") not in sent_titles]
 
-    print(f"Fundet {len(unique_articles)} nyheder og {len(ted_notices)} TED-udbud")
-    print(f"Sender e-mail til {DIGEST_EMAIL_TO} fra {DIGEST_EMAIL_FROM}...")
-    print(f"BREVO_API_KEY sat: {'ja' if BREVO_API_KEY else 'NEJ – MANGLER'}")
-    await send_brevo_email(subject, html)
+    new_articles.sort(key=lambda x: (x.get("relevance", 0), x.get("date", "")), reverse=True)
+    new_scrape.sort(key=lambda x: (x.get("relevance", 0), x.get("date", "")), reverse=True)
+
+    total_new = len(new_articles) + len(new_scrape)
+    print(f"Nye artikler: {len(new_articles)} RSS + {len(new_scrape)} scrape = {total_new} i alt")
+
+    # Send kun hvis der er nye artikler
+    if total_new == 0:
+        print("Ingen nye artikler — e-mail ikke sendt")
+    else:
+        scan_date = datetime.now().strftime("%d. %B %Y")
+        html = build_html_email(new_articles[:15], new_scrape[:10], ted_notices, scan_date, total_new)
+        subject = f"DNNK Klimamonitor · {scan_date} · {total_new} nye artikler"
+        await send_brevo_email(subject, html)
+
+    # Gem alle sendte titler
+    all_sent = sent_titles | {a.get("title", "") for a in unique_articles + unique_scrape}
+    save_sent_articles(all_sent)
     print("run_daily_digest afsluttet")
 
 async def scheduler_loop():
