@@ -612,7 +612,10 @@ function renderArticles(articles) {
     filtered = filtered.filter(a => !readArticles.has(getArticleId(a)));
   }
 
-  filtered = sortArticles(filtered);
+  // Ulæste øverst, læste nederst - inden for hver gruppe sorteres normalt
+  const ulaesteArtikler = filtered.filter(a => !readArticles.has(getArticleId(a)));
+  const laesteArtikler = filtered.filter(a => readArticles.has(getArticleId(a)));
+  filtered = [...sortArticles(ulaesteArtikler), ...sortArticles(laesteArtikler)];
 
   const total = currentFilter === 'alle' ? articles.length : filtered.length;
   const unread = filtered.filter(a => !readArticles.has(getArticleId(a))).length;
@@ -624,11 +627,17 @@ function renderArticles(articles) {
     return;
   }
 
-  container.innerHTML = filtered.map(a => {
+  // Find første læste artikel til sektion-header
+  const foersteLaest = filtered.findIndex(a => readArticles.has(getArticleId(a)));
+  
+  container.innerHTML = filtered.map((a, index) => {
     const id = getArticleId(a);
     const isRead = readArticles.has(id);
     const isNew = isNewArticle(a);
-    return `
+    const laestHeader = (index === foersteLaest && foersteLaest > 0) 
+      ? `<div style="font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:1.5rem 0 0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);font-weight:500;">Allerede læst</div>`
+      : '';
+    return laestHeader + `
       <div class="article-card ${isRead ? 'is-read' : ''} ${isNew && !isRead ? 'is-new' : ''}">
         <div>
           <div class="article-title">
@@ -705,15 +714,17 @@ async function search() {
   tedContainer.innerHTML = '<div class="loading">Henter EU-udbud<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span></div>';
 
   try {
-    const [newsRes, tedRes] = await Promise.all([
+    const [newsRes, tedRes, scrapeRes] = await Promise.all([
       fetch(`${PROXY}/news/full?q=${encodeURIComponent(q)}&limit=5`),
-      fetch(`${PROXY}/ted?q=${encodeURIComponent(q)}&size=10`)
+      fetch(`${PROXY}/ted?q=${encodeURIComponent(q)}&size=10`),
+      fetch(`${PROXY}/news/scrape?q=${encodeURIComponent(q)}`)
     ]);
 
     const newsData = await newsRes.json();
     const tedData = await tedRes.json();
+    const scrapeData = await scrapeRes.json();
 
-    allArticles = newsData.articles || [];
+    allArticles = [...(newsData.articles || []), ...(scrapeData.articles || [])];
     const notices = tedData.notices || tedData.results || [];
 
     document.getElementById('stat-articles').textContent = allArticles.length;
@@ -750,6 +761,13 @@ async function autoScan() {
       all.push(...(data.articles || []));
     } catch {}
   }
+
+  // Hent også scraping-artikler fra kommuner, forsyninger og myndigheder
+  try {
+    const scrapeRes = await fetch(`${PROXY}/news/scrape?q=klimatilpasning`);
+    const scrapeData = await scrapeRes.json();
+    all.push(...(scrapeData.articles || []));
+  } catch {}
 
   try {
     const tedRes = await fetch(`${PROXY}/ted?q=klimatilpasning&size=10`);
