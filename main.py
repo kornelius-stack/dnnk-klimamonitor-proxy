@@ -267,6 +267,35 @@ async def _scheduler_loop():
     except Exception as e:
         print(f"Scheduler fejl: {e}")
 
+
+@app.post("/chat")
+async def chat(request: dict):
+    """Proxy til Anthropic API for at undgå CORS"""
+    import httpx
+    api_key = request.get("api_key", "")
+    messages = request.get("messages", [])
+    system = request.get("system", "")
+    
+    if not api_key:
+        return {"error": "Ingen API-nøgle"}
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 800,
+                "system": system,
+                "messages": messages
+            }
+        )
+        return resp.json()
+
 @app.get("/")
 def root():
     return {"status": "ok", "service": "DNNK Klimamonitor Proxy",
@@ -415,4 +444,3 @@ async def get_scraped_news(q: str = Query("klimatilpasning")):
         "query": q,
         "scanned_at": datetime.utcnow().isoformat()
     }
-    
