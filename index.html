@@ -581,7 +581,9 @@ function setFilter(gruppe, event) {
 }
 
 function getArticleId(a) {
-  return a.url || a.title || Math.random().toString();
+  // Brug titel+kilde som stabilt ID — URL kan være tom
+  const key = (a.title || '') + '|' + (a.feedSource || a.org || '');
+  return key || Math.random().toString();
 }
 
 function isNewArticle(a) {
