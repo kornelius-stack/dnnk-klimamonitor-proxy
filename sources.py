@@ -7,29 +7,66 @@ RSS_NEWS = {
     "Ingeniøren":               "https://ing.dk/rss",
     "Ingeniøren Energi & Miljø":"https://ing.dk/term/rss/1964",
     "Altinget Miljø":           "https://www.altinget.dk/miljoe/rss.aspx",
+    "Altinget Plan & Byg":      "https://www.altinget.dk/plan/rss.aspx",
     "DR Nyheder":               "https://www.dr.dk/nyheder/service/feeds/allenyheder",
+    "Politiken Klima":          "https://politiken.dk/rss/sektion/klima/",
+    "Jyllands-Posten Klima":    "https://jyllands-posten.dk/rss/klima/",
+    "Berlingske Viden":         "https://www.berlingske.dk/rss/viden",
+    "Børsen":                   "https://borsen.dk/rss",
+    "KTC Nyt":                  "https://www.ktc.dk/nyt/rss",
 }
-RSS_VIDEN = {"IDA": "https://ida.dk/rss"}
-RSS_RAADGIVERE = {"Sweco": "https://www.sweco.dk/rss"}
-RSS_FORSYNINGER_RSS = {"HOFOR": "https://www.hofor.dk/rss"}
+
+RSS_VIDEN = {
+    "IDA":                      "https://ida.dk/rss",
+    "DANVA":                    "https://www.danva.dk/rss",
+    "Vand i Byer":              "https://vandibyer.dk/feed/",
+    "Klimatorium":              "https://klimatorium.dk/feed/",
+    "CONCITO":                  "https://concito.dk/rss",
+    "DMI":                      "https://www.dmi.dk/rss",
+}
+
+RSS_RAADGIVERE = {
+    "Sweco":                    "https://www.sweco.dk/rss",
+    "Rambøll":                  "https://ramboll.com/rss",
+    "COWI":                     "https://www.cowi.com/rss",
+    "Niras":                    "https://www.niras.dk/rss",
+    "Krüger":                   "https://www.kruger.dk/rss",
+    "Orbicon|WSP":              "https://www.wsp.com/rss",
+    "Grontmij":                 "https://www.carl-bro.dk/rss",
+}
+
+RSS_FORSYNINGER_RSS = {
+    "HOFOR":                    "https://www.hofor.dk/rss",
+}
+
 RSS_NORDEN = {
     "SVT Nyheder Klima":        "https://www.svt.se/nyheter/rss.xml",
     "VA-guiden (SE)":           "https://www.vaguiden.se/rss",
     "NCCS Norge":               "https://www.nccs.no/rss",
     "NRK Klima":                "https://www.nrk.no/toppsaker.rss",
+    "SMHI Sverige":             "https://www.smhi.se/rss",
 }
-RSS_EU = {"Interreg Baltic Sea": "https://interreg-baltic.eu/feed/"}
+
+RSS_EU = {
+    "Interreg Baltic Sea":      "https://interreg-baltic.eu/feed/",
+    "Climate-ADAPT":            "https://climate-adapt.eea.europa.eu/rss",
+    "EEA Nyheder":              "https://www.eea.europa.eu/rss",
+}
+
 RSS_PLATFORME = {
-    "Klimatorium":              "https://klimatorium.dk/feed/",
     "BLOXHUB":                  "https://bloxhub.org/rss",
     "Gate 21":                  "https://www.gate21.dk/rss",
-    "Vand i Byer":              "https://www.vandibyer.dk/rss",
     "State of Green":           "https://stateofgreen.com/en/feed/",
+    "Realdania":                "https://realdania.dk/rss",
+    "Velux Fonden":             "https://veluxfoundations.dk/rss",
 }
+
 RSS_INTERNATIONAL = {
     "FloodList":                "https://floodlist.com/feed",
     "ICLEI":                    "https://iclei.org/news/rss/",
     "UN Environment":           "https://www.unep.org/rss.xml",
+    "C40 Cities":               "https://www.c40.org/rss",
+    "Deltares":                 "https://www.deltares.nl/rss",
 }
 
 ALLE_FEEDS = {
@@ -53,6 +90,40 @@ for gruppe, feeds in ALLE_FEEDS.items():
 # ─────────────────────────────────────────────────────────────
 
 SCRAPE_SOURCES = {
+
+    # ── VIDENSINSTITUTIONER ──
+    "DNNK":                             {"url": "https://www.dnnk.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "CONCITO":                          {"url": "https://concito.dk/nyheder", "gruppe": "Vidensinstitutioner"},
+    "klimamonitor.dk":                  {"url": "https://klimamonitor.dk/nyheder/klimatilpasning", "gruppe": "Vidensinstitutioner"},
+    "DTU Byg":                          {"url": "https://www.byg.dtu.dk/nyheder", "gruppe": "Vidensinstitutioner"},
+    "AAU Civil":                        {"url": "https://www.en.aau.dk/news", "gruppe": "Vidensinstitutioner"},
+    "KU SCIENCE":                       {"url": "https://science.ku.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Teknologisk Institut":             {"url": "https://www.teknologisk.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "GEUS":                             {"url": "https://www.geus.dk/om-geus/nyt-og-presse/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "DCE Aarhus Univ.":                 {"url": "https://dce.au.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "DHI":                              {"url": "https://www.dhigroup.com/news", "gruppe": "Vidensinstitutioner"},
+
+    # ── RÅDGIVERE & TEGNESTUER ──
+    "Rambøll DK":                       {"url": "https://ramboll.com/da-dk/nyheder", "gruppe": "Rådgivere"},
+    "COWI DK":                          {"url": "https://www.cowi.com/da/nyheder", "gruppe": "Rådgivere"},
+    "Niras DK":                         {"url": "https://www.niras.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Sweco DK":                         {"url": "https://www.sweco.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Orbicon|WSP":                      {"url": "https://www.wsp.com/da-dk/nyheder", "gruppe": "Rådgivere"},
+    "Krüger":                           {"url": "https://www.kruger.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Atkins":                           {"url": "https://www.atkinsglobal.com/da-dk/nyheder", "gruppe": "Rådgivere"},
+    "MOE":                              {"url": "https://moe.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Grontmij":                         {"url": "https://grontmij.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Watertech":                        {"url": "https://watertech.dk/nyheder/", "gruppe": "Rådgivere"},
+    "PH-Consult":                       {"url": "https://www.ph-consult.dk/nyheder/", "gruppe": "Rådgivere"},
+    "EnviDan":                          {"url": "https://envidan.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Alectia":                          {"url": "https://alectia.com/nyheder/", "gruppe": "Rådgivere"},
+    "GEO":                              {"url": "https://www.geo.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Arkitema":                         {"url": "https://arkitema.com/nyheder/", "gruppe": "Rådgivere"},
+    "SLA Arkitekter":                   {"url": "https://www.sla.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Tredje Natur":                     {"url": "https://tredjenatur.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Schønherr":                        {"url": "https://schonherr.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Hasløv & Kjærsgaard":              {"url": "https://hkark.dk/nyheder/", "gruppe": "Rådgivere"},
+    "GHB Landskab":                     {"url": "https://ghb-landskab.dk/nyheder/", "gruppe": "Rådgivere"},
 
     # ── MINISTERIER ──
     "Miljøministeriet":                 {"url": "https://www.mim.dk/nyheder/", "gruppe": "Myndigheder"},
