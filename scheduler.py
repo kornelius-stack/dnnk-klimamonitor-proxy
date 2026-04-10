@@ -40,6 +40,24 @@ def save_sent_articles(titles: set):
     except Exception as e:
         print(f"Kunne ikke gemme sendte artikler: {e}")
 
+def get_yesterday_str() -> str:
+    """Returner gårsdagens dato som YYYY-MM-DD"""
+    from datetime import timedelta
+    return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+def is_recent(article: dict) -> bool:
+    """Returner True hvis artiklen er fra de seneste 2 dage"""
+    date_str = article.get("date", "")
+    if not date_str or len(date_str) < 10:
+        return True  # Ingen dato — inkluder altid
+    try:
+        from datetime import timedelta
+        art_date = datetime.strptime(date_str[:10], "%Y-%m-%d")
+        cutoff = datetime.now() - timedelta(days=2)
+        return art_date >= cutoff
+    except Exception:
+        return True
+
 async def fetch_articles(query: str, limit: int = 5) -> list:
     try:
         async with httpx.AsyncClient(timeout=30) as client:
@@ -217,9 +235,9 @@ async def run_daily_digest():
             seen_scrape.add(key)
             unique_scrape.append(art)
 
-    # Filtrer kun NYE artikler (ikke sendt før)
-    new_articles = [a for a in unique_articles if a.get("title", "") not in sent_titles]
-    new_scrape = [a for a in unique_scrape if a.get("title", "") not in sent_titles]
+    # Filtrer kun NYE artikler (ikke sendt før OG fra de seneste 2 dage)
+    new_articles = [a for a in unique_articles if a.get("title", "") not in sent_titles and is_recent(a)]
+    new_scrape = [a for a in unique_scrape if a.get("title", "") not in sent_titles and is_recent(a)]
 
     new_articles.sort(key=lambda x: (x.get("relevance", 0), x.get("date", "")), reverse=True)
     new_scrape.sort(key=lambda x: (x.get("relevance", 0), x.get("date", "")), reverse=True)
