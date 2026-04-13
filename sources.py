@@ -103,6 +103,22 @@ SCRAPE_SOURCES = {
     "DCE Aarhus Univ.":                 {"url": "https://dce.au.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
     "DHI":                              {"url": "https://www.dhigroup.com/news", "gruppe": "Vidensinstitutioner"},
 
+    # ── DNNK-RELATEREDE VIRKSOMHEDER ──
+    "Nordiq Group":                     {"url": "https://nordiqgroup.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Byspektrum":                       {"url": "https://byspektrum.dk/nyheder/", "gruppe": "Rådgivere"},
+    "LYCEUM":                           {"url": "https://lyceum.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Den Danske Vandklynge":            {"url": "https://vandklynge.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Forsikring & Pension":             {"url": "https://www.forsikringogpension.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Dansk Industri Vand":              {"url": "https://www.di.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "SmartBrønd":                       {"url": "https://smartbrond.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Scalgo":                           {"url": "https://scalgo.com/nyheder/", "gruppe": "Rådgivere"},
+    "Watson-C":                         {"url": "https://watson-c.dk/nyheder/", "gruppe": "Rådgivere"},
+    "Realdania":                        {"url": "https://realdania.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Gate 21":                          {"url": "https://gate21.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Vand i Byer":                      {"url": "https://vandibyer.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "Klimatorium":                      {"url": "https://klimatorium.dk/nyheder/", "gruppe": "Vidensinstitutioner"},
+    "BLOXHUB":                          {"url": "https://bloxhub.org/nyheder/", "gruppe": "Vidensinstitutioner"},
+
     # ── RÅDGIVERE & TEGNESTUER ──
     "Rambøll DK":                       {"url": "https://ramboll.com/da-dk/nyheder", "gruppe": "Rådgivere"},
     "COWI DK":                          {"url": "https://www.cowi.com/da/nyheder", "gruppe": "Rådgivere"},
