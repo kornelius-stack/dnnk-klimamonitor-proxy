@@ -17,19 +17,44 @@ app.add_middleware(
 )
 
 KEYWORDS = [
+    # ── Klimatilpasning – kerneord ──
     "klimatilpasning", "skybrud", "oversvømmelse", "regnvand", "LAR",
     "spildevand", "kloak", "kloakseparering", "vandforsyning", "vandværk",
     "kystbeskyttelse", "stormflod", "havvandsstigning", "klimasikring",
     "regnvandsbassin", "grøn infrastruktur", "permeable belægning",
     "faskine", "regnbed", "klimahandlingsplan", "DK2020",
     "separatkloakering", "renseanlæg", "pumpestation", "vandmiljø",
+    "klimarisiko", "klimasårbarhed", "klimatilpasningsplan", "serviceniveau",
+    "oversvømmelsesdirektiv", "klimatilpasningsloven",
+
+    # ── Vandkredsløbet – grundvand & vandløb ──
+    "grundvand", "grundvandsstand", "grundvandsforurening", "grundvandssænkning",
+    "BNBO", "indvindingstilladelse", "vandindvinding", "vandbalance",
+    "vandkredsløb", "fordampning", "nedbør", "afstrømning",
+    "vandløb", "vandløbsrestaurering", "åbning af rørlagt vandløb",
+    "meandering", "vandløbsvedligeholdelse", "okker", "vandkvalitet",
+    "sørestaurering", "vådområde", "lavbundsareal", "højmose",
+    "drænvand", "dræning", "landbrugsdræn", "nitrat", "fosfor",
+
+    # ── Kreative & innovative vinkler ──
+    "svampeby", "sponge city", "naturbaseret løsning", "nature-based solutions",
+    "blå-grøn infrastruktur", "living shoreline", "biomimicry",
+    "vandgenbrug", "regnvandsopsamling", "genanvendelse af vand",
+    "klimakvarter", "vandplus", "skybrudsplan", "skybrudsvej",
+    "klimatilpasset byggeri", "grønt tag", "grøn facade",
+    "urban heat island", "varmeø", "afkøling", "skygge og vand",
+    "robusthed", "resiliens", "adaptive design", "fremtidssikring",
+
+    # ── Nordiske & internationale termer ──
     "klimatanpassning", "översvämning", "dagvatten", "overvannshåndtering",
     "Interreg", "LIFE programme", "Horizon Europe", "Climate-ADAPT",
-    "nature-based solutions", "flood risk", "coastal adaptation",
-    "DHI", "SCALGO", "Stormrådet", "Realdania", "klimarisiko",
-    "C40", "ICLEI", "Deltares", "water resilience",
+    "flood risk", "coastal adaptation", "water resilience",
+    "DHI", "SCALGO", "Stormrådet", "Realdania", "Deltares",
+    "C40", "ICLEI", "waterboards", "Rijkswaterstaat",
+
+    # ── Brede nøgleord ──
     "klima", "vand", "miljø", "natur", "bæredygtig",
-    "climate", "water", "flood", "urban", "infrastructure"
+    "climate", "water", "flood", "urban", "infrastructure",
 ]
 
 RSS_HEADERS = {
