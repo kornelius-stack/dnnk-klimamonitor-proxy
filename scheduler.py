@@ -15,11 +15,28 @@ BASE_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://dnnk-klimamonitor-prox
 SENT_ARTICLES_FILE = Path("/tmp/sent_articles.json")
 
 QUERIES = [
-    "klimatilpasning skybrud",
-    "LAR regnvand",
-    "vandforsyning renovering",
-    "spildevand klimasikring",
-    "kystbeskyttelse oversvømmelse",
+    # ── Klimatilpasning – kernesøgninger ──
+    "klimatilpasning skybrud oversvømmelse",
+    "LAR regnvand faskine regnbed",
+    "spildevand klimasikring kloakseparering",
+    "kystbeskyttelse stormflod havvandsstigning",
+    "klimahandlingsplan DK2020 serviceniveau",
+
+    # ── Vandkredsløbet & grundvand ──
+    "grundvand BNBO indvindingstilladelse",
+    "vandløb vandløbsrestaurering rørlagt",
+    "vådområde lavbund sørestaurering",
+    "vandbalance afstrømning nedbør",
+
+    # ── Kreative & innovative vinkler ──
+    "svampeby blå-grøn naturbaseret løsning",
+    "klimakvarter skybrudsplan vandplus",
+    "klimatilpasset byggeri grønt tag resiliens",
+    "sponge city living shoreline biomimicry",
+
+    # ── Lovgivning & EU ──
+    "oversvømmelsesdirektiv klimatilpasningsloven høring",
+    "Interreg LIFE Horizon klimatilpasning",
 ]
 
 def load_sent_articles() -> set:
