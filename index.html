@@ -592,16 +592,25 @@ function setFilter(gruppe, event) {
 }
 
 function getArticleId(a) {
-  return ((a.title || '') + '|' + (a.feedSource || a.org || '')).trim() || Math.random().toString();
+  return (a.url || ((a.title || '') + '|' + (a.feedSource || a.org || '')).trim()) || '';
 }
 
 function isNewArticle(a) { return !seenArticles.has(getArticleId(a)); }
+
+function getEffectiveRelevance(a) {
+  const id = getArticleId(a);
+  const vote = relevanceVotes[id];
+  const base = a.relevance || 0;
+  if (vote === 'up')   return Math.min(base + 0.3, 1.0);
+  if (vote === 'down') return Math.max(base - 0.5, 0.0);
+  return base;
+}
 
 function sortArticles(articles) {
   if (currentSort === 'date') {
     return [...articles].sort((a, b) => new Date(b.date||0) - new Date(a.date||0));
   } else {
-    return [...articles].sort((a, b) => (b.relevance||0) - (a.relevance||0));
+    return [...articles].sort((a, b) => getEffectiveRelevance(b) - getEffectiveRelevance(a));
   }
 }
 
@@ -612,6 +621,8 @@ function voteRelevance(encodedId, direction) {
     delete relevanceVotes[id];
   } else {
     relevanceVotes[id] = direction;
+    readArticles.add(id);
+    saveRead();
   }
   saveVotes();
   renderArticles(allArticles);
@@ -651,7 +662,7 @@ function renderArticles(articles) {
     const id = getArticleId(a);
     const isRead = readArticles.has(id);
     const isNew = isNewArticle(a);
-    const vote = relevanceVotes[encodeURIComponent(id)] || null;
+    const vote = relevanceVotes[id] || null;
     const separator = (index === foersteLaest && foersteLaest > 0)
       ? `<div class="laest-separator">Allerede læst</div>` : '';
 
